@@ -8,18 +8,22 @@ document.head.appendChild(sheet);
 
 sheet.innerHTML = '.monaco-editor { display: none; }';
 
-fetch('./src/index.css')
+fetch(new URL('./src/index.css', import.meta.url))
   .then((res) => res.text())
-  .then((styles) => (sheet.innerHTML = styles));
+  .then((styles) => (sheet.innerHTML = styles.replace(/\.\/src/g, new URL('./src', import.meta.url).href)));
 
 self.MonacoEnvironment = {
   getWorkerUrl: function (moduleId, label) {
-    if (label === 'json') return './src/monaco/language/json/json.worker.js';
-    if (label === 'css') return './src/monaco/language/css/css.worker.js';
-    if (label === 'html') return './src/monaco/language/html/html.worker.js';
-    if (label === 'typescript' || label === 'javascript')
-      return './src/monaco/language/typescript/ts.worker.js';
-    return './src/monaco/editor/editor.worker.js';
+    let url
+    switch (label) {
+      case 'json': url = './src/monaco/language/json/json.worker.js'; break
+      case 'css': url = './src/monaco/language/css/css.worker.js'; break
+      case 'html': url = './src/monaco/language/html/html.worker.js'; break
+      case 'typescript':
+      case 'javascript': url = './src/monaco/language/typescript/ts.worker.js'; break
+      default: url = './src/monaco/editor/editor.worker.js'; break
+    }
+    return new URL(url, import.meta.url).href
   },
 };
 
@@ -78,7 +82,7 @@ export default (options) => {
 
   if (options.theme === 'vs-light') container.style.backgroundColor = '#fff';
   if (options.theme?.startsWith('http') || options.theme?.startsWith('./'))
-    fetch(options.theme)
+    fetch(new URL(options.theme, import.meta.url))
       .then((res) => res.json())
       .then((data) => {
         monaco.editor.defineTheme('theme', data);
